@@ -1,0 +1,8 @@
+<resources>
+
+	<string name="app_name">BallSlider</string>
+	<string name="mode_ready">&lt;Ball Slider&gt;\nTap on Screen to Play</string>
+	<string name="mode_pause">Paused\nPress Up To Resume</string>
+	<string name="mode_lose">Game Over\nYour score: %1$d \nTap on screen to restart</string>
+
+</resources>
