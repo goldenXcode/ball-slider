@@ -12,10 +12,14 @@ import ru.spb.andryb.ballslider.model.Logic;
 import ru.spb.andryb.ballslider.model.ModelInterface;
 import ru.spb.andryb.ballslider.view.GameView;
 import ru.spb.andryb.ballslider.view.ViewInterface;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.res.Resources;
 import android.graphics.Color;
+import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.text.Layout;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -39,6 +43,44 @@ public class MainActivity extends Activity  {
 	private ModelInterface mModel;
 	private ControllerInterface mController;
 	
+	private GameStateChangeHandler mGameStateChangeHandler = new GameStateChangeHandler();
+	
+	public GameStateChangeHandler getGameStateChangeHandle() {return mGameStateChangeHandler;}
+	
+	@SuppressLint("HandlerLeak")
+	public class GameStateChangeHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+        	GameState newState = GameState.values()[msg.what];
+        	
+    		CharSequence text;
+    		switch (newState) {
+    			case STARTED:
+    	            setContentView(mGameWindow);
+    				break;
+    			case ERROR:
+    				break;
+    			case GAMEOVER:
+    	            setContentView(R.layout.gameover_layout);
+    				mTextView = (TextView) findViewById(R.id.score_text);
+    				mTextView.setText(mModel.getScore() + "");
+    				break;
+    			case MENU:
+    	            setContentView(R.layout.menu_layout);
+    				break;
+    			case PAUSE:
+    	            setContentView(R.layout.pause_layout);
+    				break;
+    		}
+    		
+    		mGameWindow.gameStateChanged(newState);
+        }
+        
+        public void stateChanged (GameState state) {
+            this.sendEmptyMessage(state.ordinal());
+        }
+    };
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -48,11 +90,11 @@ public class MainActivity extends Activity  {
         WindowManager.LayoutParams.FLAG_FULLSCREEN);
         
 		mTextView = new TextView(this);
-        mModel = new Logic(this);
+        mModel = new Logic(this, mGameStateChangeHandler);
         mGameWindow = new GameView(this);
         mController = new Controller(mModel, mGameWindow);
-        
-        mGameWindow.setActivity(this);
+
+        mGameWindow.init(this);
 		
 		//mTextView.setX(mGameWindow.getWidth());
 		mTextView.setGravity(Gravity.CENTER);
@@ -62,25 +104,17 @@ public class MainActivity extends Activity  {
 		CharSequence text = getResources().getText(R.string.mode_ready);
 		mTextView.setText(text);
 		
-        setContentView(mTextView);
+        //setContentView(mTextView);
+		setContentView(R.layout.welcome_layout);
         
-        mTextView.setOnTouchListener(new OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                mController.startGame();
-                GameModeHasChanged(mModel.getState());
-				return true;
-            }
-        });
-        
-        mGameWindow.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				System.out.println("Untapped");
-            	mController.endLeftAction();
-            	mController.endRightAction();
-			}
-        });
+//        mTextView.setOnTouchListener(new OnTouchListener() {
+//            @Override
+//            public boolean onTouch(View v, MotionEvent event) {
+//                mController.startGame();
+//                //GameModeHasChanged(mModel.getState());
+//				return true;
+//            }
+//        });
         
         /*
         mGameWindow.setOnTouchListener(new OnTouchListener() {
@@ -117,27 +151,28 @@ public class MainActivity extends Activity  {
         //ActionBar actionBar = getSupportActionBar();
         //actionBar.hide();
 	}
-    
-	public void GameModeHasChanged(GameState newState) {
-		CharSequence text;
-		switch (newState) {
-			case STARTED:
-	            setContentView(mGameWindow);
+	
+	public void clickOnView(View v) {
+		switch (v.getId()) {
+			case R.id.WelcomeFrame:
+				setContentView(R.layout.menu_layout);
+				//mGameStateChangeHandler.stateChanged(GameState.MENU);
+		        //setContentView(mTextView);
+				//setContentView(R.layout.main_layout);
 				break;
-			case ERROR:
+			case R.id.MenuFrame:
+                mController.startGame();
 				break;
-			case GAMEOVER:
-				text = getResources().getString(R.string.mode_lose, mModel.getScore());
-				mTextView.setText(text);
-	            setContentView(mTextView);
+			case R.id.GameoverFrame:
+                mController.startGame();
 				break;
-			case MENU:
-				text = getResources().getText(R.string.mode_ready);
-				mTextView.setText(text);
-	            setContentView(mTextView);
+			case R.id.PauseFrame:
+                mController.startGame();
+				break;
+			default:
 				break;
 		}
-	}
+	};
 	
 //	@Override
 //	protected void onStart() {
@@ -149,20 +184,24 @@ public class MainActivity extends Activity  {
 //		super.onRestart();
 //	}
 //	
-//	@Override
-//    protected void onResume() {
-//		super.onResume();
-//	}
+	@Override
+    protected void onResume() {
+		super.onResume();
+		//mModel.resume();
+	}
+	
+	@Override
+    protected void onPause() {
+		System.out.println("onStop()");
+		super.onPause();
+		mModel.pause();
+	}
 //	
-//	@Override
-//    protected void onPause() {
-//		super.onPause();
-//	}
-//	
-//	@Override
-//    protected void onStop() {
-//		super.onStop();
-//	}
+	@Override
+    protected void onStop() {
+		System.out.println("onStop()");
+		super.onStop();
+	}
 //	
 //	@Override
 //    protected void onDestroy() {

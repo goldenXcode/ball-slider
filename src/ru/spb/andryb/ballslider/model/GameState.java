@@ -31,5 +31,9 @@ public enum GameState {
     /**
      * If any exception.
      */
-    ERROR
+    ERROR,
+    /**
+     * Started game on pause now.
+     */
+    PAUSE,
 }

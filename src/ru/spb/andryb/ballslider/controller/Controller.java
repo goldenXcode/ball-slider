@@ -41,24 +41,29 @@ public class Controller implements ControllerInterface{
     public boolean startGame() {
         return model.StartGame();
     }
-
+    
     @Override
-    public void beginLeftAction() {
-        model.BeginMovingBallToLeft();
+    public void setPlayerAction(float action) {
+    	model.setPlayerAction(action);
     }
 
-    @Override
-    public void beginRightAction() {
-        model.BeginMovingBallToRight();
-    }
-
-    @Override
-    public void endLeftAction() {
-        model.StopMovingBallToLeft();
-    }
-
-    @Override
-    public void endRightAction() {
-        model.StopMovingBallToRight();
-    }
+//    @Override
+//    public void beginLeftAction() {
+//        model.BeginMovingBallToLeft();
+//    }
+//
+//    @Override
+//    public void beginRightAction() {
+//        model.BeginMovingBallToRight();
+//    }
+//
+//    @Override
+//    public void endLeftAction() {
+//        model.StopMovingBallToLeft();
+//    }
+//
+//    @Override
+//    public void endRightAction() {
+//        model.StopMovingBallToRight();
+//    }
 }

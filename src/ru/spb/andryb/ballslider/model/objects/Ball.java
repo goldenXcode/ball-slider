@@ -17,18 +17,17 @@ public class Ball extends GameObject {
      */
     private float dx;
     /**
-     * Accelerate (offset) in Ycoordinate in each movement
+     * Accelerate (offset) in Y coordinate in each movement
      */
     private float dy;
-    
-    /**
-     * User action to left.
+
+    /** 
+     * From -100.0 to +100.0,
+     * -100.0 - maximum power to left ball move,
+     * +100.0 - maximum power to right ball move,
+     * 0.0 - player not affected on ball.
      */
-    private boolean movementByPlayerToLeft;
-    /**
-     * User action to right.
-     */
-    private boolean movementByPlayerToRight;
+    private float mMovePower; 
     
     /**
      * Default Ball constructor.
@@ -49,21 +48,18 @@ public class Ball extends GameObject {
     
     /**
      * Calculating next ball coordinates (
-     * @param movingBallToLeft
-     * @param movingBallToRight 
+     * @param movePower, From -100.0 to +100.0,
+     * 					 -100.0 - maximum power to left ball move,
+     * 					 +100.0 - maximum power to right ball move,
+     *    				 0.0 - player not affected on ball.
      */
-    public void move(boolean movingBallToLeft, boolean movingBallToRight) {
-        movementByPlayerToRight = movingBallToRight;
-        movementByPlayerToLeft = movingBallToLeft;
+    public void move(float movePower) {
+    	this.mMovePower = movePower;
+    	
+//        if ( movePower != 0.0 )
+//        	System.out.println("R: " + movingBallToRight + " L: " + movingBallToLeft);
         
-        if ( movingBallToLeft || movingBallToRight)
-        	System.out.println("R: " + movingBallToRight + " L: " + movingBallToLeft);
-        
-        dx += (float)((movingBallToLeft == true) 
-                ? -Constants.OFFSET_BALL_IN_X * Constants.OFFSET_TAP_INCREMENT
-                : (movingBallToRight == true) 
-                ? Constants.OFFSET_BALL_IN_X * Constants.OFFSET_TAP_INCREMENT
-                : 0.0);
+        dx += (float) Constants.OFFSET_BALL_IN_X * Constants.OFFSET_TAP_INCREMENT * mMovePower / 100.0;
 
         toRealCoordinates();
         x += dx;
@@ -134,16 +130,36 @@ public class Ball extends GameObject {
         x -= previousDx;
 
         if (dx != 0) {
-            if (dx > 0 && movementByPlayerToRight == false) {
+            if (dx > 0 && mMovePower <= 0.0F) {
                 dx -= Constants.OFFSET_BALL_IN_X;
                 if (dx < 0)
                     dx = 0;
             }
-            if (dx < 0 && movementByPlayerToLeft == false) {
+            if (dx < 0 && mMovePower >= 0.0F) {
                 dx += Constants.OFFSET_BALL_IN_X;
                 if (dx > 0)
                     dx = 0;
             }
+        	
+//        	float newDX = dx;
+//        	
+//        	newDX -= (float) Constants.OFFSET_BALL_IN_X * mMovePower / 100.0;
+//        	
+//        	if (dx * newDX < 0)
+//        		dx = 0;
+//        	else
+//        		dx = newDX;
+        	
+//            if (dx > 0 && movementByPlayerToRight == false) {
+//                dx -= Constants.OFFSET_BALL_IN_X;
+//                if (dx < 0)
+//                    dx = 0;
+//            }
+//            if (dx < 0 && movementByPlayerToLeft == false) {
+//                dx += Constants.OFFSET_BALL_IN_X;
+//                if (dx > 0)
+//                    dx = 0;
+//            }
         }
         
         y = stair.getY() - height + offsetInY;

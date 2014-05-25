@@ -12,7 +12,11 @@ package ru.spb.andryb.ballslider;
  */
 public class Constants {
     /**
-     * Timer delay. (in milliseconds).\
+     * Player controller: tap on screen or accelerometer
+     */
+    public static final boolean ACCELEROMETER_ENABLED           = true;
+    /**
+     * Timer delay. (in milliseconds).
      */
     public static final int TIMER_DELAY_ms                      = 5;
     /**

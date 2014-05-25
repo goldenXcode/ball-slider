@@ -55,22 +55,41 @@ public interface ModelInterface {
      * @param c, controller.
      */
     public void setController(ControllerInterface c);
+
     /**
-     * Begin of a left ball moving (response on a user action).
+     * Set of player action on ball moving.
+     * @param action, From -100.0 to +100.0
+     * 				  -100.0 - maximum power to left ball move
+     * 				  +100.0 - maximum power to right ball move
+     *    		      0.0 - player not affected on ball
      */
-    public void BeginMovingBallToLeft();
+    public void setPlayerAction(float action);
+//    /**
+//     * Begin of a left ball moving (response on a user action).
+//     */
+//    public void BeginMovingBallToLeft();
+//    /**
+//     * Begin of a right ball moving (response on a user action).
+//     */
+//    public void BeginMovingBallToRight();
+//    /**
+//     * Stop of a left ball moving (response on a user action).
+//     */
+//    public void StopMovingBallToLeft();
+//    /**
+//     * Stop of a right ball moving (response on a user action).
+//     */
+//    public void StopMovingBallToRight();
     /**
-     * Begin of a right ball moving (response on a user action).
+     * Pause game.
+     * @return true, if pause is successful.
      */
-    public void BeginMovingBallToRight();
+    public boolean pause();
     /**
-     * Stop of a left ball moving (response on a user action).
+     * Resume game, if game has been paused.
+     * @return true, if resume is successful.
      */
-    public void StopMovingBallToLeft();
-    /**
-     * Stop of a right ball moving (response on a user action).
-     */
-    public void StopMovingBallToRight();
+    public boolean resume();
     /**
      * Stopping game.
      * Includes all required operations.

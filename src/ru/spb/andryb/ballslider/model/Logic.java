@@ -8,6 +8,7 @@ package ru.spb.andryb.ballslider.model;
 
 import ru.spb.andryb.ballslider.Constants;
 import ru.spb.andryb.ballslider.MainActivity;
+import ru.spb.andryb.ballslider.MainActivity.GameStateChangeHandler;
 import ru.spb.andryb.ballslider.controller.ControllerInterface;
 import ru.spb.andryb.ballslider.model.objects.Ball;
 import ru.spb.andryb.ballslider.model.objects.GameObject;
@@ -23,6 +24,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import android.os.Message;
 
 /**
  * @author Administrator
@@ -47,23 +50,36 @@ public class Logic implements ModelInterface{
      * False otherwise.
      */
     private boolean movingBallToLeft;
+
+    /**
+     * From -100.0 to +100.0
+     * -100.0 - maximum power to left ball move
+     * +100.0 - maximum power to right ball move
+     *    0.0 - player not affected on ball
+     */
+    private float mPlayerActionOnBall;
+    
     /**
      * True, if user activated right action,
      * False otherwise.
      */
     private boolean movingBallToRight;
+    
     /**
-     * Current score of player.
+     * Current game score.
      */
     private int score;
+    
     /**
      * Current state of game.
      */
     private GameState state;
+    
     /**
      * Ball :D
      */
     private Ball ball;
+    
     /**
      * Collection with all game objects (for example - stairs),
      * except ball.
@@ -74,19 +90,25 @@ public class Logic implements ModelInterface{
      * Link to realisation of view interface.
      */
     private ViewInterface view;    
+    
     /**
      * Link to realisation of controller interface.
      */
     private ControllerInterface controller;
     
+    private GameStateChangeHandler mGameStateChangeHandler;
+    
     /**
      * Logic default constructor.
+     * @param handler 
      */
-    public Logic(MainActivity activity) {
+    public Logic(MainActivity activity, GameStateChangeHandler handler) {
         this.ball = null;
-        this.state = GameState.MENU;
         this.movingBallToLeft = false;
         this.movingBallToRight = false;
+        this.state = GameState.MENU;
+        this.mGameStateChangeHandler = handler;
+        //this.mGameStateChangeHandler.stateChanged(state);
     }
     
     @Override
@@ -96,6 +118,10 @@ public class Logic implements ModelInterface{
     
     @Override
     public boolean StartGame() {
+        if (state == GameState.PAUSE) {
+            return resume();
+        }
+        
         if (state == GameState.STARTED)
             return false;
         
@@ -105,6 +131,7 @@ public class Logic implements ModelInterface{
         
         Logger.getAnonymousLogger().info("GAME START");
         state = GameState.STARTED;
+        mGameStateChangeHandler.stateChanged(state);
         return true;
     }
     
@@ -125,10 +152,12 @@ public class Logic implements ModelInterface{
         // Creation first stair.
         stair = Stair.create(y, StairType.NORMAL);
         
-        objects = new ArrayList<>();
+        objects = new ArrayList<GameObject>();
         objects.add(stair);
         
         score = 0;
+        ticksCount = 0;
+        mPlayerActionOnBall = 0.0f;
         
         // Creation ball on stair.
         ball = new Ball(
@@ -180,7 +209,7 @@ public class Logic implements ModelInterface{
                 if (state == GameState.STARTED) {
                     if (ticksCount % Constants.BALL_MOVE_DELAY == 0) {
                         // Next ball movement (at dx, dy)
-                        ball.move(movingBallToLeft, movingBallToRight);
+                        ball.move(mPlayerActionOnBall);
 
                         // Checking for game over
                         if (ball.getY() < 0 
@@ -239,7 +268,10 @@ public class Logic implements ModelInterface{
                 }
                 
                 // Request to view for repaint game window. 
-                if (view != null)
+                if (view != null 
+                		&& (ticksCount % Constants.OBJECTS_MOVE_DELAY == 0 
+                		|| ticksCount % Constants.BALL_MOVE_DELAY == 0
+                		|| ticksCount % Constants.STAIR_CREATION_DELAY == 0))
                     view.repaintView();
                 
                 // Check for ticksCount value and increase it.
@@ -261,8 +293,18 @@ public class Logic implements ModelInterface{
      */
     private void startTimer(int startDelay) {
         Logger.getAnonymousLogger().log(Level.INFO, "TIMER START (delay: {0})", startDelay);
-        ticksCount = 0;
         timer.schedule(timerTask, startDelay, Constants.TIMER_DELAY_ms);
+    }
+    
+    /**
+     * Starting game timer with delay.
+     * @param startDelay, delay before start (in milliseconds).
+     */
+    private void stopTimer() {
+        Logger.getAnonymousLogger().log(Level.INFO, "TIMER STOP");
+        
+        timer.cancel();
+        timer.purge();
     }
     
     /**
@@ -271,10 +313,35 @@ public class Logic implements ModelInterface{
     private void GameOver() {
         Logger.getAnonymousLogger().info("GAME OVER");
         state = GameState.GAMEOVER;
+        mGameStateChangeHandler.stateChanged(state);
         
-        // Restart test
         StopGame();
     }
+    
+    @Override
+    public boolean pause() {
+    	if (state != GameState.STARTED)
+    		return false;
+    	
+    	stopTimer();
+    	
+        state = GameState.PAUSE;
+        mGameStateChangeHandler.stateChanged(state);
+    	return true;
+    };
+    
+    @Override
+    public boolean resume() {
+    	if (state != GameState.PAUSE)
+    		return false;
+    	
+    	initTimer();
+    	startTimer(0);
+    	
+        state = GameState.STARTED;
+        mGameStateChangeHandler.stateChanged(state);
+    	return true;
+    };
     
     @Override
     public Ball getBall() {return ball;}
@@ -298,33 +365,46 @@ public class Logic implements ModelInterface{
     public void setController(ControllerInterface c) {
         this.controller = c;
     }
-
+    
     @Override
-    public void BeginMovingBallToLeft() {
-        movingBallToLeft = true;
-        movingBallToRight = false;
+    public void setPlayerAction(float action) {
+    	if (action > 100.0)
+    		action = 100.0F;
+    	if (action < -100.0)
+    		action = -100.0F;
+    	if (Math.abs(action) < 5.0F)
+    		action = 0.0F;
+    	
+    	this.mPlayerActionOnBall = action;
     }
 
-    @Override
-    public void BeginMovingBallToRight() {
-        movingBallToRight = true;
-        movingBallToLeft = false;
-    }
-
-    @Override
-    public void StopMovingBallToLeft() {
-        movingBallToLeft = false;
-    }
-
-    @Override
-    public void StopMovingBallToRight() {
-        movingBallToRight = false;
-    }
+//    @Override
+//    public void BeginMovingBallToLeft() {
+//        movingBallToLeft = true;
+//        movingBallToRight = false;
+//    }
+//
+//    @Override
+//    public void BeginMovingBallToRight() {
+//        movingBallToRight = true;
+//        movingBallToLeft = false;
+//    }
+//
+//    @Override
+//    public void StopMovingBallToLeft() {
+//        movingBallToLeft = false;
+//    }
+//
+//    @Override
+//    public void StopMovingBallToRight() {
+//        movingBallToRight = false;
+//    }
 
     @Override
     public boolean StopGame() {
         Logger.getAnonymousLogger().info("GAME STOP");
         //state = GameState.MENU;
+        //mGameStateChangeHandler.stateChanged(state);
         
         timerTask.cancel();
         timer.cancel();
